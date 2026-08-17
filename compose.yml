@@ -9,6 +9,7 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-axi_test}
       DB_USERNAME: ${POSTGRES_USER:-axi}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-axi_local_password}
+      APP_SEED_ENABLED: ${APP_SEED_ENABLED:-true}
     volumes:
       - ./backend:/app
       - maven_cache:/root/.m2
