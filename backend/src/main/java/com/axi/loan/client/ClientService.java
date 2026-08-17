@@ -7,9 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Locale;
 
 @Service
 public class ClientService {
@@ -18,30 +16,34 @@ public class ClientService {
     private static final Sort DEFAULT_ORDER = Sort.by(Sort.Direction.ASC, "id");
 
     private final ClientRepository clientRepository;
-    private final EmploymentRepository employmentRepository;
 
-    public ClientService(ClientRepository clientRepository, EmploymentRepository employmentRepository) {
+    public ClientService(ClientRepository clientRepository) {
         this.clientRepository = clientRepository;
-        this.employmentRepository = employmentRepository;
     }
 
     @Transactional(readOnly = true)
-    public ClientPageResponse getClients(int requestedPage, int requestedSize) {
+    public ClientPageResponse getClients(
+            int requestedPage,
+            int requestedSize,
+            String requestedName,
+            String requestedPhone,
+            String requestedPassport
+    ) {
         int pageNumber = Math.max(requestedPage, 0);
         int pageSize = Math.clamp(requestedSize, 1, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(pageNumber, pageSize, DEFAULT_ORDER);
-        Page<Client> clientPage = clientRepository.findAll(pageable);
+        String name = normalizeText(requestedName);
+        String phone = normalizeIdentifier(requestedPhone);
+        String passport = normalizeIdentifier(requestedPassport);
 
-        List<Long> clientIds = clientPage.stream().map(Client::getId).toList();
-        Map<Long, List<Employment>> employmentsByClientId = clientIds.isEmpty()
-                ? Map.of()
-                : employmentRepository.findAllByClientIdInOrderByEmployedFromDesc(clientIds).stream()
-                        .collect(Collectors.groupingBy(employment -> employment.getClient().getId()));
+        Page<Client> clientPage = name.isEmpty() && phone.isEmpty() && passport.isEmpty()
+                ? clientRepository.findAll(pageable)
+                : clientRepository.findAll(
+                        ClientSpecifications.withFilters(name, phone, passport),
+                        pageable);
 
-        List<ClientResponse> clients = clientPage.stream()
-                .map(client -> ClientResponse.from(
-                        client,
-                        employmentsByClientId.getOrDefault(client.getId(), List.of())))
+        var clients = clientPage.stream()
+                .map(ClientResponse::from)
                 .toList();
 
         return new ClientPageResponse(
@@ -50,5 +52,17 @@ public class ClientService {
                 clientPage.getSize(),
                 clientPage.getTotalElements(),
                 clientPage.getTotalPages());
+    }
+
+    String normalizeText(String value) {
+        return value == null
+                ? ""
+                : value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+    }
+
+    String normalizeIdentifier(String value) {
+        return value == null
+                ? ""
+                : value.replaceAll("[^\\p{L}\\p{N}]", "").toLowerCase(Locale.ROOT);
     }
 }

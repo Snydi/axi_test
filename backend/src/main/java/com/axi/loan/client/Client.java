@@ -10,6 +10,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -56,6 +57,7 @@ public class Client {
 
     @OneToMany(mappedBy = "client", fetch = FetchType.LAZY)
     @OrderBy("employedFrom DESC")
+    @BatchSize(size = 100)
     private List<Employment> employments = new ArrayList<>();
 
     protected Client() {

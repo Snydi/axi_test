@@ -18,8 +18,11 @@ public class ClientController {
     @GetMapping
     public ClientPageResponse getClients(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "25") int size
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(defaultValue = "") String name,
+            @RequestParam(defaultValue = "") String phone,
+            @RequestParam(defaultValue = "") String passport
     ) {
-        return clientService.getClients(page, size);
+        return clientService.getClients(page, size, name, phone, passport);
     }
 }

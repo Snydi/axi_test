@@ -18,7 +18,7 @@ public record ClientResponse(
         List<EmploymentResponse> employments,
         OffsetDateTime createdAt
 ) {
-    static ClientResponse from(Client client, List<Employment> clientEmployments) {
+    static ClientResponse from(Client client) {
         String fullName = String.join(" ",
                 client.getLastName(),
                 client.getFirstName(),
@@ -26,7 +26,7 @@ public record ClientResponse(
         String passport = client.getPassport() == null
                 ? null
                 : client.getPassport().getSeries() + " " + client.getPassport().getNumber();
-        List<EmploymentResponse> employments = clientEmployments.stream()
+        List<EmploymentResponse> employments = client.getEmployments().stream()
                 .map(EmploymentResponse::from)
                 .toList();
 

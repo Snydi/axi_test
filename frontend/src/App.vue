@@ -1,14 +1,18 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const clients = ref([])
 const loading = ref(true)
 const error = ref('')
-const query = ref('')
+const nameQuery = ref('')
+const phoneQuery = ref('')
+const passportQuery = ref('')
 const page = ref(0)
 const pageSize = 25
 const totalElements = ref(0)
 const totalPages = ref(0)
+let searchTimer
+let activeRequest
 
 const genderLabels = {
   MALE: 'Мужской',
@@ -28,23 +32,28 @@ function currentEmployment(client) {
   return client.employments?.find((employment) => !employment.employedTo) ?? client.employments?.[0]
 }
 
-const visibleClients = computed(() => {
-  const term = query.value.trim().toLocaleLowerCase()
-  if (!term) return clients.value
-
-  return clients.value.filter((client) =>
-    [client.fullName, client.phone, client.passport]
-      .filter(Boolean)
-      .some((value) => value.toLocaleLowerCase().includes(term)),
-  )
-})
-
 async function loadClients(targetPage = page.value) {
+  activeRequest?.abort()
+  const request = new AbortController()
+  activeRequest = request
   loading.value = true
   error.value = ''
 
   try {
-    const response = await fetch(`/api/clients?page=${targetPage}&size=${pageSize}`)
+    const params = new URLSearchParams({
+      page: targetPage.toString(),
+      size: pageSize.toString(),
+    })
+    const filters = {
+      name: nameQuery.value.trim(),
+      phone: phoneQuery.value.trim(),
+      passport: passportQuery.value.trim(),
+    }
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value)
+    })
+
+    const response = await fetch(`/api/clients?${params}`, { signal: request.signal })
     if (!response.ok) throw new Error(`Ошибка запроса. Статус: ${response.status}`)
     const result = await response.json()
     clients.value = result.content
@@ -52,23 +61,31 @@ async function loadClients(targetPage = page.value) {
     totalElements.value = result.totalElements
     totalPages.value = result.totalPages
   } catch (requestError) {
+    if (requestError.name === 'AbortError') return
     error.value = 'Не удалось загрузить список клиентов. Попробуйте ещё раз.'
     console.error(requestError)
   } finally {
-    loading.value = false
+    if (activeRequest === request) loading.value = false
   }
 }
 
+watch([nameQuery, phoneQuery, passportQuery], () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => loadClients(0), 300)
+})
+
 onMounted(loadClients)
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer)
+  activeRequest?.abort()
+})
 </script>
 
 <template>
   <main class="page">
     <header class="page-header">
       <div>
-        <p class="eyebrow">Управление кредитами</p>
         <h1>Клиенты</h1>
-        <p class="subtitle">Все зарегистрированные клиенты в одном месте.</p>
       </div>
       <span v-if="!loading && !error" class="count">Всего: {{ totalElements }}</span>
     </header>
@@ -76,10 +93,20 @@ onMounted(loadClients)
     <section class="panel" aria-labelledby="clients-heading">
       <div class="toolbar">
         <h2 id="clients-heading">Список клиентов</h2>
-        <label class="search">
-          <span class="sr-only">Поиск клиентов</span>
-          <input v-model="query" type="search" placeholder="Поиск по ФИО, телефону или паспорту" />
-        </label>
+        <div class="filters">
+          <label class="search">
+            <span class="sr-only">Поиск по ФИО</span>
+            <input v-model="nameQuery" type="search" placeholder="ФИО" />
+          </label>
+          <label class="search">
+            <span class="sr-only">Поиск по телефону</span>
+            <input v-model="phoneQuery" type="search" inputmode="tel" placeholder="Телефон" />
+          </label>
+          <label class="search">
+            <span class="sr-only">Поиск по паспорту</span>
+            <input v-model="passportQuery" type="search" placeholder="Паспорт" />
+          </label>
+        </div>
       </div>
 
       <div v-if="loading" class="state" role="status">Загрузка клиентов…</div>
@@ -87,8 +114,8 @@ onMounted(loadClients)
         <p>{{ error }}</p>
         <button type="button" @click="loadClients">Повторить</button>
       </div>
-      <div v-else-if="visibleClients.length === 0" class="state">
-        {{ query ? 'По вашему запросу клиенты не найдены.' : 'Клиенты ещё не добавлены.' }}
+      <div v-else-if="clients.length === 0" class="state">
+        {{ nameQuery || phoneQuery || passportQuery ? 'По вашему запросу клиенты не найдены.' : 'Клиенты ещё не добавлены.' }}
       </div>
 
       <div v-else class="table-wrap">
@@ -105,7 +132,7 @@ onMounted(loadClients)
             </tr>
           </thead>
           <tbody>
-            <tr v-for="client in visibleClients" :key="client.id">
+            <tr v-for="client in clients" :key="client.id">
               <td>
                 <strong>{{ client.fullName }}</strong>
                 <small>#{{ client.id }}</small>
@@ -151,7 +178,8 @@ h1 { margin: 0; color: #101828; font-size: clamp(32px, 5vw, 48px); line-height: 
 .panel { overflow: hidden; border: 1px solid #e4e7ec; border-radius: 14px; background: white; box-shadow: 0 8px 24px rgb(16 24 40 / 5%); }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 24px; border-bottom: 1px solid #eaecf0; }
 h2 { margin: 0; color: #101828; font-size: 18px; }
-.search input { width: min(340px, 42vw); padding: 10px 14px; border: 1px solid #d0d5dd; border-radius: 8px; color: #101828; outline: none; }
+.filters { display: flex; gap: 10px; }
+.search input { width: min(210px, 18vw); padding: 10px 14px; border: 1px solid #d0d5dd; border-radius: 8px; color: #101828; outline: none; }
 .search input:focus { border-color: #84adff; box-shadow: 0 0 0 3px #d1e0ff; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
@@ -172,6 +200,7 @@ td small { display: block; margin-top: 4px; color: #98a2b3; }
   .page { width: min(100% - 20px, 1440px); padding: 32px 0; }
   .page-header { align-items: flex-start; }
   .toolbar { align-items: stretch; flex-direction: column; }
+  .filters { flex-direction: column; }
   .search input { width: 100%; }
   th, td { padding-left: 16px; padding-right: 16px; }
 }
