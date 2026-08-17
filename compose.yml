@@ -61,15 +61,35 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-axi}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-axi_local_password}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - axi_network
+
+  liquibase:
+    build:
+      context: .
+      dockerfile: docker/liquibase/Dockerfile
+    image: axi-test-liquibase:5.0.3
+    profiles:
+      - tools
+    environment:
+      LIQUIBASE_COMMAND_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-axi_test}
+      LIQUIBASE_COMMAND_USERNAME: ${POSTGRES_USER:-axi}
+      LIQUIBASE_COMMAND_PASSWORD: ${POSTGRES_PASSWORD:-axi_local_password}
+      LIQUIBASE_SEARCH_PATH: /liquibase/classpath
+      LIQUIBASE_COMMAND_CHANGELOG_FILE: db/changelog/db.changelog-master.yaml
+    volumes:
+      - ./backend/src/main/resources:/liquibase/classpath:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - axi_network
 

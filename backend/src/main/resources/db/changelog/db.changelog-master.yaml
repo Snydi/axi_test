@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - include:
+      file: changes/001-create-enum-types.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/002-create-loan-tables.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/003-create-indexes.sql
+      relativeToChangelogFile: true
