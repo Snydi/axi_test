@@ -4,6 +4,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 public class LoanAgreementService {
@@ -25,5 +31,14 @@ public class LoanAgreementService {
         return new LoanAgreementPageResponse(
                 result.stream().map(LoanAgreementResponse::from).toList(),
                 result.getNumber(), result.getSize(), result.getTotalElements(), result.getTotalPages());
+    }
+
+    @Transactional
+    public LoanAgreementResponse signAgreement(Long agreementId) {
+        var agreement = repository.findById(agreementId)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Договор не найден"));
+
+        agreement.sign(OffsetDateTime.now(ZoneOffset.UTC));
+        return LoanAgreementResponse.from(agreement);
     }
 }

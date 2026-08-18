@@ -60,6 +60,14 @@ public class LoanAgreement {
         this.signedAt = null;
     }
 
+    public void sign(OffsetDateTime signedAt) {
+        if (signatureStatus == SignatureStatus.SIGNED) {
+            return;
+        }
+        this.signatureStatus = SignatureStatus.SIGNED;
+        this.signedAt = signedAt;
+    }
+
     public Long getId() { return id; }
     public LoanApplication getApplication() { return application; }
     public LoanDecision getDecision() { return decision; }

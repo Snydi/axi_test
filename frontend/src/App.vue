@@ -59,6 +59,8 @@ const applicationsTotalPages = ref(0)
 const agreements = ref([])
 const agreementsLoading = ref(false)
 const agreementsError = ref('')
+const agreementActionError = ref('')
+const agreementSigningId = ref(null)
 const agreementsPage = ref(0)
 const agreementsTotalElements = ref(0)
 const agreementsTotalPages = ref(0)
@@ -257,6 +259,24 @@ async function loadAgreements(targetPage = agreementsPage.value) {
     console.error(requestError)
   } finally {
     if (agreementsRequest === request) agreementsLoading.value = false
+  }
+}
+
+async function signAgreement(agreement) {
+  agreementSigningId.value = agreement.id
+  agreementActionError.value = ''
+
+  try {
+    const response = await fetch(`/api/agreements/${agreement.id}/sign`, { method: 'POST' })
+    if (!response.ok) throw new Error(`Ошибка запроса. Статус: ${response.status}`)
+    const signedAgreement = await response.json()
+    const index = agreements.value.findIndex((item) => item.id === agreement.id)
+    if (index !== -1) agreements.value[index] = signedAgreement
+  } catch (requestError) {
+    agreementActionError.value = 'Не удалось подписать договор. Попробуйте ещё раз.'
+    console.error(requestError)
+  } finally {
+    agreementSigningId.value = null
   }
 }
 
@@ -710,6 +730,8 @@ onBeforeUnmount(() => {
           <h2 id="agreements-heading">Все кредитные договоры</h2>
         </div>
 
+        <div v-if="agreementActionError" class="action-error" role="alert">{{ agreementActionError }}</div>
+
         <div v-if="agreementsLoading" class="state" role="status">Загрузка договоров…</div>
         <div v-else-if="agreementsError" class="state error" role="alert">
           <p>{{ agreementsError }}</p>
@@ -722,7 +744,7 @@ onBeforeUnmount(() => {
             <thead>
               <tr>
                 <th>Договор</th><th>Клиент</th><th>Телефон</th><th>Паспорт</th><th>Цель кредита</th>
-                <th>Запрошено</th><th>Одобрено</th><th>Срок</th><th>Дата подписания</th><th>Статус подписи</th>
+                <th>Запрошено</th><th>Одобрено</th><th>Срок</th><th>Дата подписания</th><th>Статус подписи</th><th>Действие</th>
               </tr>
             </thead>
             <tbody>
@@ -740,6 +762,18 @@ onBeforeUnmount(() => {
                   <span class="status-badge" :class="`signature-${agreement.signatureStatus.toLowerCase()}`">
                     {{ signatureStatusLabels[agreement.signatureStatus] || agreement.signatureStatus }}
                   </span>
+                </td>
+                <td>
+                  <button
+                    v-if="agreement.signatureStatus === 'UNSIGNED'"
+                    class="action-button"
+                    type="button"
+                    :disabled="agreementSigningId === agreement.id"
+                    @click="signAgreement(agreement)"
+                  >
+                    {{ agreementSigningId === agreement.id ? 'Подписание…' : 'Подписать' }}
+                  </button>
+                  <span v-else>—</span>
                 </td>
               </tr>
             </tbody>
@@ -790,6 +824,10 @@ td { padding: 17px 24px; border-top: 1px solid #eaecf0; color: #475467; font-siz
 td:first-child, td strong { color: #101828; }
 td small { display: block; margin-top: 4px; color: #98a2b3; }
 .state { padding: 64px 24px; color: #667085; text-align: center; }
+.action-error { padding: 12px 24px; border-bottom: 1px solid #fecdca; color: #b42318; background: #fef3f2; font-size: 14px; }
+.action-button { padding: 8px 13px; border: 0; border-radius: 8px; color: white; background: #175cd3; cursor: pointer; font-weight: 600; }
+.action-button:hover { background: #1849a9; }
+.action-button:disabled { opacity: .65; cursor: wait; }
 .state p { margin: 0 0 16px; }
 .state button { padding: 9px 15px; border: 0; border-radius: 8px; color: white; background: #175cd3; cursor: pointer; }
 .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 16px; padding: 16px 24px; border-top: 1px solid #eaecf0; color: #667085; font-size: 14px; }

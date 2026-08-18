@@ -1,6 +1,8 @@
 package com.axi.loan.agreement;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,5 +23,10 @@ public class LoanAgreementController {
             @RequestParam(defaultValue = "25") int size
     ) {
         return service.getAgreements(page, size);
+    }
+
+    @PostMapping("/{id}/sign")
+    public LoanAgreementResponse signAgreement(@PathVariable Long id) {
+        return service.signAgreement(id);
     }
 }
