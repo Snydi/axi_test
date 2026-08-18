@@ -73,27 +73,6 @@ services:
     networks:
       - axi_network
 
-  liquibase:
-    build:
-      context: .
-      dockerfile: docker/liquibase/Dockerfile
-    image: axi-test-liquibase:5.0.3
-    profiles:
-      - tools
-    environment:
-      LIQUIBASE_COMMAND_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-axi_test}
-      LIQUIBASE_COMMAND_USERNAME: ${POSTGRES_USER:-axi}
-      LIQUIBASE_COMMAND_PASSWORD: ${POSTGRES_PASSWORD:-axi_local_password}
-      LIQUIBASE_SEARCH_PATH: /liquibase/classpath
-      LIQUIBASE_COMMAND_CHANGELOG_FILE: db/changelog/db.changelog-master.yaml
-    volumes:
-      - ./backend/src/main/resources:/liquibase/classpath:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - axi_network
-
 volumes:
   maven_cache:
   node_modules:

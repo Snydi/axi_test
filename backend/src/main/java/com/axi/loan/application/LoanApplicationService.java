@@ -10,7 +10,6 @@ import com.axi.loan.client.Passport;
 import com.axi.loan.client.PassportRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +28,6 @@ public class LoanApplicationService {
     private final LoanDecisionRepository decisionRepository;
     private final LoanAgreementRepository agreementRepository;
 
-    @Autowired
     public LoanApplicationService(
             LoanApplicationRepository repository,
             ClientRepository clientRepository,
