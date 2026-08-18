@@ -7,6 +7,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
@@ -21,6 +23,7 @@ import java.time.OffsetDateTime;
 public class LoanAgreement {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
@@ -43,6 +46,18 @@ public class LoanAgreement {
     private OffsetDateTime signedAt;
 
     protected LoanAgreement() {
+    }
+
+    public LoanAgreement(
+            LoanApplication application,
+            LoanDecision decision,
+            String agreementNumber
+    ) {
+        this.application = application;
+        this.decision = decision;
+        this.agreementNumber = agreementNumber;
+        this.signatureStatus = SignatureStatus.UNSIGNED;
+        this.signedAt = null;
     }
 
     public Long getId() { return id; }

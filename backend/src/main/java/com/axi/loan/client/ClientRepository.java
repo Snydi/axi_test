@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ClientRepository extends JpaRepository<Client, Long>, JpaSpecificationExecutor<Client> {
 
+    boolean existsByPhone(String phone);
+
     @Override
     @EntityGraph(attributePaths = "passport")
     Page<Client> findAll(Pageable pageable);

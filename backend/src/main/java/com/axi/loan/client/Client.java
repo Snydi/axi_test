@@ -5,12 +5,16 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -21,6 +25,7 @@ import java.util.List;
 public class Client {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "first_name", nullable = false)
@@ -42,10 +47,12 @@ public class Client {
     private String registrationAddress;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(nullable = false, columnDefinition = "gender_type")
     private Gender gender;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "marital_status", nullable = false, columnDefinition = "marital_status_type")
     private MaritalStatus maritalStatus;
 
@@ -61,6 +68,28 @@ public class Client {
     private List<Employment> employments = new ArrayList<>();
 
     protected Client() {
+    }
+
+    public Client(
+            String firstName,
+            String lastName,
+            String middleName,
+            String phone,
+            String residentialAddress,
+            String registrationAddress,
+            Gender gender,
+            MaritalStatus maritalStatus,
+            OffsetDateTime createdAt
+    ) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.middleName = middleName;
+        this.phone = phone;
+        this.residentialAddress = residentialAddress;
+        this.registrationAddress = registrationAddress;
+        this.gender = gender;
+        this.maritalStatus = maritalStatus;
+        this.createdAt = createdAt;
     }
 
     public Long getId() { return id; }

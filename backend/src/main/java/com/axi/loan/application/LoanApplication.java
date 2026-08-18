@@ -4,6 +4,8 @@ import com.axi.loan.client.Client;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -18,6 +20,7 @@ import java.time.OffsetDateTime;
 public class LoanApplication {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,6 +40,13 @@ public class LoanApplication {
     private LoanDecision decision;
 
     protected LoanApplication() {
+    }
+
+    public LoanApplication(Client client, BigDecimal requestedAmount, String purpose, OffsetDateTime createdAt) {
+        this.client = client;
+        this.requestedAmount = requestedAmount;
+        this.purpose = purpose;
+        this.createdAt = createdAt;
     }
 
     public Long getId() { return id; }
